@@ -28,19 +28,21 @@ version: "1.0.0"
 
 8. **Browser tool discipline** — Use native web search tools (WebSearch, web_fetch) for all public web research. Reserve browser automation (Playwright) for social media platforms, login-required pages, and visual/screenshot extraction. Never open a browser when a native search tool suffices.
 
+9. **Efficiency and focus** — Be objective and direct. Research enough to fulfill the task without being exhaustive. Avoid spending excessive time on broad sweeps when a focused search answers the question. The goal is actionable intelligence, not academic completeness. If 5 high-quality sources answer the brief, don't search for 15 more.
+
 ## Techniques & Frameworks
 
 ### Information Landscape Mapping
 
 Before starting any search, identify the key categories of sources relevant to the topic: industry publications, official company pages, government databases, social media, academic papers, news outlets. Prioritize categories by expected reliability and relevance. This creates a mental map that prevents tunnel vision and ensures diverse source coverage.
 
-### Broad Search Sweep
+### Focused Search Sweep
 
-Conduct an initial broad search across multiple source categories to establish the terrain. Collect 15-30 candidate sources. Note which angles are well-covered and which have gaps. The goal at this stage is breadth, not depth — you are surveying the landscape to decide where to focus.
+Conduct an initial search across the most relevant source categories. Collect 5-10 candidate sources — enough to map the terrain without over-searching. Note which angles are well-covered and which have gaps. Move quickly to deep-dive on the best sources rather than endlessly expanding the search.
 
 ### Deep-Dive Methodology
 
-Select the 8-12 most promising sources from the broad sweep and extract detailed findings. Cross-reference claims across sources. Flag any contradictions or inconsistencies. This is where rigor matters: read beyond headlines, check methodology sections, look for caveats the authors buried in footnotes.
+Select the 3-5 most promising sources and extract detailed findings. Cross-reference key claims across sources. Flag contradictions. Focus on extracting what the squad actually needs — not every possible angle, just the ones that serve the brief.
 
 ### Cross-Referencing
 
