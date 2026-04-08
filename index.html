@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noblus Eyewear — Meta Ads Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --sidebar-bg: #ffffff;
+    --border: #e2e8f0;
+    --primary: #6366f1;
+    --primary-light: #eef2ff;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --ok: #22c55e;
+    --ok-bg: #f0fdf4;
+    --warn: #f59e0b;
+    --warn-bg: #fffbeb;
+    --crit: #ef4444;
+    --crit-bg: #fef2f2;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+    --radius: 12px;
+    --sidebar-w: 220px;
+  }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+  .layout { display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; font-weight: 700;
+  }
+  .sidebar-logo .logo-text { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .sidebar-logo .logo-sub { font-size: 11px; color: var(--text-muted); }
+  .sidebar-section { padding: 12px 8px 4px; font-size: 10px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sidebar-nav { padding: 4px 8px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-light);
+  }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; }
+  .topbar-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .filters { display: flex; align-items: center; gap: 8px; }
+  .filter-group { display: flex; align-items: center; gap: 6px; }
+  .filter-group label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  select.filter-select {
+    padding: 6px 28px 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  select.filter-select:focus { outline: none; border-color: var(--primary); }
+  .btn-export {
+    padding: 6px 14px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.15s;
+  }
+  .btn-export:hover { opacity: 0.9; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 20px 24px 32px; }
+
+  /* KPI CARDS */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--status-color, var(--border));
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .kpi-card.ok { --status-color: var(--ok); }
+  .kpi-card.warn { --status-color: var(--warn); }
+  .kpi-card.crit { --status-color: var(--crit); }
+  .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 6px; }
+  .kpi-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 600;
+  }
+  .kpi-badge.ok { background: var(--ok-bg); color: #15803d; }
+  .kpi-badge.warn { background: var(--warn-bg); color: #b45309; }
+  .kpi-badge.crit { background: var(--crit-bg); color: #b91c1c; }
+  .kpi-meta { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+
+  /* CHARTS GRID */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .chart-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .btn-reset-zoom {
+    padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text-muted); font-size: 11px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-reset-zoom:hover { border-color: var(--primary); color: var(--primary); }
+  .chart-wrap { position: relative; }
+
+  /* FUNNEL */
+  .funnel { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+  .funnel-row { display: flex; align-items: center; gap: 10px; }
+  .funnel-label { font-size: 12px; color: var(--text-muted); width: 100px; text-align: right; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; height: 32px; background: var(--bg); border-radius: 6px; overflow: hidden; position: relative; }
+  .funnel-bar {
+    height: 100%; border-radius: 6px;
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 12px; font-weight: 700; color: #fff;
+    white-space: nowrap;
+    transition: width 0.6s ease;
+  }
+  .funnel-pct { font-size: 11px; color: var(--text-light); width: 52px; flex-shrink: 0; text-align: right; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .table-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { background: var(--bg); }
+  th {
+    padding: 10px 14px; text-align: left;
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    white-space: nowrap; cursor: pointer; user-select: none;
+    border-bottom: 1px solid var(--border);
+  }
+  th:hover { color: var(--primary); }
+  th .sort-icon { margin-left: 4px; opacity: 0.4; }
+  th.sorted { color: var(--primary); }
+  th.sorted .sort-icon { opacity: 1; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  }
+  .badge.ok { background: var(--ok-bg); color: #15803d; }
+  .badge.warn { background: var(--warn-bg); color: #b45309; }
+  .badge.crit { background: var(--crit-bg); color: #b91c1c; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+  .empty h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+
+  /* PRINT */
+  @media print {
+    .sidebar, .topbar .filters { display: none; }
+    .layout { display: block; }
+    .content { overflow: visible; }
+    .chart-card, .kpi-card, .table-card { break-inside: avoid; }
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">N</div>
+      <div>
+        <div class="logo-text">Noblus Eyewear</div>
+        <div class="logo-sub">Meta Ads Dashboard</div>
+      </div>
+    </div>
+    <div class="sidebar-nav" style="margin-top:8px">
+      <div class="sidebar-section">Geral</div>
+      <div class="nav-item active"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item"><span class="nav-icon">📣</span> Campanhas</div>
+      <div class="nav-item"><span class="nav-icon">🎯</span> Conjuntos</div>
+      <div class="nav-item"><span class="nav-icon">🎨</span> Criativos</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Análise</div>
+      <div class="nav-item"><span class="nav-icon">📈</span> Tendências</div>
+      <div class="nav-item"><span class="nav-icon">🔁</span> Retargeting</div>
+    </div>
+    <div class="sidebar-footer">
+      Atualizado em<br><span id="footer-date" style="color:var(--text-muted)"></span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-subtitle" id="topbar-subtitle">Visão geral da conta</div>
+      </div>
+      <div class="filters">
+        <div class="filter-group">
+          <label>Período</label>
+          <select class="filter-select" id="sel-period">
+            <option value="7">7 dias</option>
+            <option value="30">30 dias</option>
+            <option value="90">90 dias</option>
+            <option value="180" selected>180 dias</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Campanha</label>
+          <select class="filter-select" id="sel-campaign">
+            <option value="all">Todas</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Conjunto</label>
+          <select class="filter-select" id="sel-adset">
+            <option value="all">Todos</option>
+          </select>
+        </div>
+        <button class="btn-export" onclick="window.print()">
+          <span>⬇</span> Exportar
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- KPI CARDS -->
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid" id="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">ROAS por Campanha</div>
+              <div class="chart-subtitle">Scroll para zoom · arraste para navegar</div>
+            </div>
+            <button class="btn-reset-zoom" onclick="resetZoom('chartRoas')">↺ Reset zoom</button>
+          </div>
+          <div class="chart-wrap"><canvas id="chartRoas" height="200"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Funil de Conversão</div>
+              <div class="chart-subtitle">Impressões → Compras</div>
+            </div>
+          </div>
+          <div id="funnel-wrap" class="funnel"></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Distribuição de Investimento</div>
+              <div class="chart-subtitle">Por campanha</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="max-width:340px;margin:0 auto"><canvas id="chartSpend" height="200"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Hook Rate vs Hold Rate</div>
+              <div class="chart-subtitle">Qualidade de criativo · meta: Hook ≥ 30% · Hold ≥ 20%</div>
+            </div>
+            <button class="btn-reset-zoom" onclick="resetZoom('chartHook')">↺ Reset zoom</button>
+          </div>
+          <div class="chart-wrap"><canvas id="chartHook" height="200"></canvas></div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title" id="table-title">Métricas Detalhadas</div>
+        </div>
+        <div class="table-wrap">
+          <table id="metrics-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)" data-col="0">Nome <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(1)" data-col="1">Investimento <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(2)" data-col="2">ROAS <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(3)" data-col="3">Compras <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(4)" data-col="4">Carrinhos <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(5)" data-col="5">CTR <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(6)" data-col="6">Hook Rate <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(7)" data-col="7">Hold Rate <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(8)" data-col="8">CPM <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(9)" data-col="9">Freq. <span class="sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const DASHBOARD_DATA = {"meta":{"collected_at":"2026-04-08T20:49:53.374Z","account_id":"769815955308246"},"periods":{"7":{"campaign":[],"adset":[]},"30":{"campaign":[],"adset":[]},"90":{"campaign":[],"adset":[]},"180":{"campaign":[{"campaign_name":"venda_noblus","spend":"458.94","impressions":"32035","reach":"20911","frequency":"1.531969","cpm":"14.326206","ctr":"3.105978","inline_link_clicks":"592","inline_link_click_ctr":"1.847979","actions":[{"action_type":"onsite_conversion.total_messaging_connection","value":"5"},{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"web_in_store_purchase","value":"4"},{"action_type":"omni_purchase","value":"4"},{"action_type":"link_click","value":"592"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"omni_initiated_checkout","value":"19"},{"action_type":"page_engagement","value":"5325"},{"action_type":"purchase","value":"4"},{"action_type":"landing_page_view","value":"509"},{"action_type":"add_to_cart","value":"81"},{"action_type":"onsite_conversion.view_content","value":"31"},{"action_type":"omni_landing_page_view","value":"509"},{"action_type":"onsite_app_view_content","value":"31"},{"action_type":"post_engagement","value":"5325"},{"action_type":"post_interaction_gross","value":"82"},{"action_type":"comment","value":"4"},{"action_type":"onsite_web_app_purchase","value":"4"},{"action_type":"onsite_web_view_content","value":"761"},{"action_type":"onsite_web_add_to_cart","value":"81"},{"action_type":"post_interaction_net","value":"82"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"4"},{"action_type":"onsite_conversion.messaging_user_depth_2_message_send","value":"2"},{"action_type":"onsite_conversion.messaging_first_reply","value":"1"},{"action_type":"onsite_web_app_view_content","value":"761"},{"action_type":"post","value":"10"},{"action_type":"view_content","value":"730"},{"action_type":"onsite_conversion.post_save","value":"4"},{"action_type":"onsite_conversion.post_net_comment","value":"4"},{"action_type":"onsite_conversion.messaging_user_depth_3_message_send","value":"2"},{"action_type":"web_app_in_store_purchase","value":"4"},{"action_type":"onsite_web_app_add_to_cart","value":"81"},{"action_type":"onsite_conversion.post_net_save","value":"4"},{"action_type":"onsite_conversion.post_net_like","value":"64"},{"action_type":"onsite_web_initiate_checkout","value":"19"},{"action_type":"omni_add_to_cart","value":"81"},{"action_type":"offsite_content_view_add_meta_leads","value":"730"},{"action_type":"onsite_web_purchase","value":"4"},{"action_type":"onsite_conversion.messaging_conversation_started_7d","value":"2"},{"action_type":"video_view","value":"4651"},{"action_type":"omni_view_content","value":"761"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"730"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"81"},{"action_type":"post_reaction","value":"64"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"19"},{"action_type":"initiate_checkout","value":"19"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"686.37"},{"action_type":"onsite_web_app_add_to_cart","value":"17005"},{"action_type":"onsite_web_initiate_checkout","value":"3366.21"},{"action_type":"omni_initiated_checkout","value":"3366.21"},{"action_type":"web_app_in_store_purchase","value":"0.07"},{"action_type":"add_to_cart","value":"17005"},{"action_type":"onsite_web_purchase","value":"686.37"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"17005"},{"action_type":"purchase","value":"686.37"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"3366.21"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"686.37"},{"action_type":"initiate_checkout","value":"3366.21"},{"action_type":"omni_add_to_cart","value":"17005"},{"action_type":"omni_purchase","value":"686.37"},{"action_type":"web_in_store_purchase","value":"686.37"},{"action_type":"onsite_web_add_to_cart","value":"17005"}],"purchase_roas":[{"action_type":"omni_purchase","value":"1.495555"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"4073"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"1718"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"640"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":458.94,"impressions":32035,"reach":20911,"roas":1.495555,"purchases":4,"addToCart":81,"cac":114.735,"cpaCart":5.665925925925926,"hookRate":14.518495395660997,"holdRate":5.3628843452473856,"ctrLink":1.847979,"frequency":1.531969,"cpm":14.326206,"clicks":592}},{"campaign_name":"tráfego_ecomm","spend":"253.51","impressions":"44095","reach":"30398","frequency":"1.450589","cpm":"5.749178","ctr":"4.043542","inline_link_clicks":"1720","inline_link_click_ctr":"3.900669","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"1720"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"page_engagement","value":"1973"},{"action_type":"landing_page_view","value":"909"},{"action_type":"add_to_cart","value":"5"},{"action_type":"onsite_conversion.view_content","value":"8"},{"action_type":"omni_landing_page_view","value":"909"},{"action_type":"onsite_app_view_content","value":"8"},{"action_type":"post_engagement","value":"1973"},{"action_type":"post_interaction_gross","value":"52"},{"action_type":"onsite_web_view_content","value":"869"},{"action_type":"onsite_web_add_to_cart","value":"5"},{"action_type":"post_interaction_net","value":"52"},{"action_type":"onsite_web_app_view_content","value":"869"},{"action_type":"view_content","value":"861"},{"action_type":"onsite_conversion.post_save","value":"5"},{"action_type":"onsite_web_app_add_to_cart","value":"5"},{"action_type":"onsite_conversion.post_net_save","value":"5"},{"action_type":"onsite_conversion.post_net_like","value":"47"},{"action_type":"omni_add_to_cart","value":"5"},{"action_type":"offsite_content_view_add_meta_leads","value":"861"},{"action_type":"video_view","value":"201"},{"action_type":"omni_view_content","value":"869"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"861"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"5"},{"action_type":"post_reaction","value":"47"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"939.75"},{"action_type":"add_to_cart","value":"939.75"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"939.75"},{"action_type":"omni_add_to_cart","value":"939.75"},{"action_type":"onsite_web_add_to_cart","value":"939.75"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"155"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"86"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"49"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":253.51,"impressions":44095,"reach":30398,"roas":0,"purchases":0,"addToCart":5,"cac":0,"cpaCart":50.702,"hookRate":0.4558339947839891,"holdRate":0.19503345050459236,"ctrLink":3.900669,"frequency":1.450589,"cpm":5.749178,"clicks":1720}},{"campaign_name":"vendas_rmkt","spend":"101.32","impressions":"4452","reach":"342","frequency":"13.017544","cpm":"22.758311","ctr":"2.448338","inline_link_clicks":"90","inline_link_click_ctr":"2.021563","actions":[{"action_type":"web_in_store_purchase","value":"1"},{"action_type":"omni_purchase","value":"1"},{"action_type":"link_click","value":"90"},{"action_type":"omni_initiated_checkout","value":"2"},{"action_type":"page_engagement","value":"92"},{"action_type":"purchase","value":"1"},{"action_type":"landing_page_view","value":"74"},{"action_type":"add_to_cart","value":"6"},{"action_type":"omni_landing_page_view","value":"74"},{"action_type":"post_engagement","value":"92"},{"action_type":"post_interaction_gross","value":"2"},{"action_type":"onsite_web_app_purchase","value":"1"},{"action_type":"onsite_web_view_content","value":"91"},{"action_type":"onsite_web_add_to_cart","value":"6"},{"action_type":"post_interaction_net","value":"2"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"1"},{"action_type":"onsite_web_app_view_content","value":"91"},{"action_type":"view_content","value":"91"},{"action_type":"web_app_in_store_purchase","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"6"},{"action_type":"onsite_conversion.post_net_like","value":"2"},{"action_type":"onsite_web_initiate_checkout","value":"2"},{"action_type":"omni_add_to_cart","value":"6"},{"action_type":"offsite_content_view_add_meta_leads","value":"91"},{"action_type":"onsite_web_purchase","value":"1"},{"action_type":"omni_view_content","value":"91"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"91"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"6"},{"action_type":"post_reaction","value":"2"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"2"},{"action_type":"initiate_checkout","value":"2"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"166.66"},{"action_type":"onsite_web_app_add_to_cart","value":"1521.5"},{"action_type":"onsite_web_initiate_checkout","value":"336.12"},{"action_type":"omni_initiated_checkout","value":"336.12"},{"action_type":"web_app_in_store_purchase","value":"0.02"},{"action_type":"add_to_cart","value":"1521.5"},{"action_type":"onsite_web_purchase","value":"166.66"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"1521.5"},{"action_type":"purchase","value":"166.66"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"336.12"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"166.66"},{"action_type":"initiate_checkout","value":"336.12"},{"action_type":"omni_add_to_cart","value":"1521.5"},{"action_type":"omni_purchase","value":"166.66"},{"action_type":"web_in_store_purchase","value":"166.66"},{"action_type":"onsite_web_add_to_cart","value":"1521.5"}],"purchase_roas":[{"action_type":"omni_purchase","value":"1.644887"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":101.32,"impressions":4452,"reach":342,"roas":1.644887,"purchases":1,"addToCart":6,"cac":101.32,"cpaCart":16.886666666666667,"hookRate":0,"holdRate":0,"ctrLink":2.021563,"frequency":13.017544,"cpm":22.758311,"clicks":90}},{"campaign_name":"vendas_rmkt_v2","spend":"102","impressions":"3890","reach":"2458","frequency":"1.582587","cpm":"26.22108","ctr":"2.493573","inline_link_clicks":"76","inline_link_click_ctr":"1.953728","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"76"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"page_engagement","value":"83"},{"action_type":"landing_page_view","value":"40"},{"action_type":"add_to_cart","value":"4"},{"action_type":"onsite_conversion.view_content","value":"3"},{"action_type":"omni_landing_page_view","value":"40"},{"action_type":"onsite_app_view_content","value":"3"},{"action_type":"post_engagement","value":"83"},{"action_type":"post_interaction_gross","value":"7"},{"action_type":"onsite_web_view_content","value":"60"},{"action_type":"onsite_web_add_to_cart","value":"4"},{"action_type":"post_interaction_net","value":"7"},{"action_type":"onsite_web_app_view_content","value":"60"},{"action_type":"view_content","value":"57"},{"action_type":"onsite_conversion.post_save","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"4"},{"action_type":"onsite_conversion.post_net_save","value":"1"},{"action_type":"onsite_conversion.post_net_like","value":"6"},{"action_type":"omni_add_to_cart","value":"4"},{"action_type":"offsite_content_view_add_meta_leads","value":"57"},{"action_type":"omni_view_content","value":"60"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"57"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"4"},{"action_type":"post_reaction","value":"6"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"742.85"},{"action_type":"add_to_cart","value":"742.85"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"742.85"},{"action_type":"omni_add_to_cart","value":"742.85"},{"action_type":"onsite_web_add_to_cart","value":"742.85"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":102,"impressions":3890,"reach":2458,"roas":0,"purchases":0,"addToCart":4,"cac":0,"cpaCart":25.5,"hookRate":0,"holdRate":0,"ctrLink":1.953728,"frequency":1.582587,"cpm":26.22108,"clicks":76}},{"campaign_name":"vendas_v2","spend":"341.08","impressions":"14837","reach":"7560","frequency":"1.962566","cpm":"22.988475","ctr":"3.241895","inline_link_clicks":"363","inline_link_click_ctr":"2.446586","actions":[{"action_type":"onsite_conversion.total_messaging_connection","value":"4"},{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"web_in_store_purchase","value":"1"},{"action_type":"omni_purchase","value":"1"},{"action_type":"link_click","value":"363"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"omni_initiated_checkout","value":"8"},{"action_type":"page_engagement","value":"609"},{"action_type":"purchase","value":"1"},{"action_type":"landing_page_view","value":"187"},{"action_type":"add_to_cart","value":"47"},{"action_type":"onsite_conversion.view_content","value":"12"},{"action_type":"omni_landing_page_view","value":"187"},{"action_type":"onsite_app_view_content","value":"12"},{"action_type":"post_engagement","value":"609"},{"action_type":"post_interaction_gross","value":"36"},{"action_type":"onsite_web_app_purchase","value":"1"},{"action_type":"onsite_web_view_content","value":"226"},{"action_type":"onsite_web_add_to_cart","value":"47"},{"action_type":"post_interaction_net","value":"36"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"1"},{"action_type":"onsite_conversion.messaging_user_depth_2_message_send","value":"2"},{"action_type":"onsite_web_app_view_content","value":"226"},{"action_type":"post","value":"1"},{"action_type":"view_content","value":"214"},{"action_type":"onsite_conversion.post_save","value":"3"},{"action_type":"onsite_conversion.messaging_user_depth_3_message_send","value":"1"},{"action_type":"web_app_in_store_purchase","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"47"},{"action_type":"onsite_conversion.post_net_save","value":"3"},{"action_type":"onsite_conversion.post_net_like","value":"32"},{"action_type":"onsite_web_initiate_checkout","value":"8"},{"action_type":"omni_add_to_cart","value":"47"},{"action_type":"offsite_content_view_add_meta_leads","value":"214"},{"action_type":"onsite_web_purchase","value":"1"},{"action_type":"onsite_conversion.messaging_conversation_started_7d","value":"4"},{"action_type":"video_view","value":"210"},{"action_type":"omni_view_content","value":"226"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"214"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"47"},{"action_type":"post_reaction","value":"32"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"8"},{"action_type":"initiate_checkout","value":"8"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"185.61"},{"action_type":"onsite_web_app_add_to_cart","value":"11429.15"},{"action_type":"onsite_web_initiate_checkout","value":"1331.21"},{"action_type":"omni_initiated_checkout","value":"1331.21"},{"action_type":"web_app_in_store_purchase","value":"0.02"},{"action_type":"add_to_cart","value":"11429.15"},{"action_type":"onsite_web_purchase","value":"185.61"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"11429.15"},{"action_type":"purchase","value":"185.61"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"1331.21"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"185.61"},{"action_type":"initiate_checkout","value":"1331.21"},{"action_type":"omni_add_to_cart","value":"11429.15"},{"action_type":"omni_purchase","value":"185.61"},{"action_type":"web_in_store_purchase","value":"185.61"},{"action_type":"onsite_web_add_to_cart","value":"11429.15"}],"purchase_roas":[{"action_type":"omni_purchase","value":"0.544183"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"213"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"89"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"39"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":341.08,"impressions":14837,"reach":7560,"roas":0.544183,"purchases":1,"addToCart":47,"cac":341.08,"cpaCart":7.2570212765957445,"hookRate":1.4153804677495452,"holdRate":0.5998517220462357,"ctrLink":2.446586,"frequency":1.962566,"cpm":22.988475,"clicks":363}},{"campaign_name":"vendas_noblus_out25","spend":"65.92","impressions":"1937","reach":"1339","frequency":"1.446602","cpm":"34.032008","ctr":"6.350026","inline_link_clicks":"108","inline_link_click_ctr":"5.575632","actions":[{"action_type":"link_click","value":"108"},{"action_type":"page_engagement","value":"293"},{"action_type":"landing_page_view","value":"38"},{"action_type":"add_to_cart","value":"8"},{"action_type":"onsite_conversion.view_content","value":"1"},{"action_type":"omni_landing_page_view","value":"38"},{"action_type":"onsite_app_view_content","value":"1"},{"action_type":"post_engagement","value":"293"},{"action_type":"post_interaction_gross","value":"8"},{"action_type":"onsite_web_view_content","value":"32"},{"action_type":"onsite_web_add_to_cart","value":"8"},{"action_type":"post_interaction_net","value":"8"},{"action_type":"onsite_web_app_view_content","value":"32"},{"action_type":"view_content","value":"31"},{"action_type":"onsite_web_app_add_to_cart","value":"8"},{"action_type":"onsite_conversion.post_net_like","value":"8"},{"action_type":"omni_add_to_cart","value":"8"},{"action_type":"offsite_content_view_add_meta_leads","value":"31"},{"action_type":"video_view","value":"177"},{"action_type":"omni_view_content","value":"32"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"31"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"8"},{"action_type":"post_reaction","value":"8"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"2210.65"},{"action_type":"add_to_cart","value":"2210.65"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"2210.65"},{"action_type":"omni_add_to_cart","value":"2210.65"},{"action_type":"onsite_web_add_to_cart","value":"2210.65"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"123"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"80"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"65"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":65.92,"impressions":1937,"reach":1339,"roas":0,"purchases":0,"addToCart":8,"cac":0,"cpaCart":8.24,"hookRate":9.137842023748064,"holdRate":4.130098089829634,"ctrLink":5.575632,"frequency":1.446602,"cpm":34.032008,"clicks":108}},{"campaign_name":"rmkt_quente","spend":"65.29","impressions":"3400","reach":"2293","frequency":"1.482774","cpm":"19.202941","ctr":"2.647059","inline_link_clicks":"66","inline_link_click_ctr":"1.941176","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"66"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"omni_initiated_checkout","value":"4"},{"action_type":"page_engagement","value":"140"},{"action_type":"landing_page_view","value":"39"},{"action_type":"add_to_cart","value":"12"},{"action_type":"onsite_conversion.view_content","value":"1"},{"action_type":"omni_landing_page_view","value":"39"},{"action_type":"onsite_app_view_content","value":"1"},{"action_type":"post_engagement","value":"140"},{"action_type":"post_interaction_gross","value":"4"},{"action_type":"onsite_web_view_content","value":"44"},{"action_type":"onsite_web_add_to_cart","value":"12"},{"action_type":"post_interaction_net","value":"4"},{"action_type":"onsite_web_app_view_content","value":"44"},{"action_type":"view_content","value":"43"},{"action_type":"onsite_web_app_add_to_cart","value":"12"},{"action_type":"onsite_conversion.post_net_like","value":"4"},{"action_type":"onsite_web_initiate_checkout","value":"4"},{"action_type":"omni_add_to_cart","value":"12"},{"action_type":"offsite_content_view_add_meta_leads","value":"43"},{"action_type":"video_view","value":"70"},{"action_type":"omni_view_content","value":"44"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"43"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"12"},{"action_type":"post_reaction","value":"4"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"4"},{"action_type":"initiate_checkout","value":"4"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"2559.7"},{"action_type":"onsite_web_initiate_checkout","value":"635.45"},{"action_type":"omni_initiated_checkout","value":"635.45"},{"action_type":"add_to_cart","value":"2559.7"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"2559.7"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"635.45"},{"action_type":"initiate_checkout","value":"635.45"},{"action_type":"omni_add_to_cart","value":"2559.7"},{"action_type":"onsite_web_add_to_cart","value":"2559.7"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"51"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"11"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"4"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":65.29,"impressions":3400,"reach":2293,"roas":0,"purchases":0,"addToCart":12,"cac":0,"cpaCart":5.440833333333334,"hookRate":2.0588235294117645,"holdRate":0.3235294117647059,"ctrLink":1.941176,"frequency":1.482774,"cpm":19.202941,"clicks":66}}],"adset":[{"campaign_name":"venda_noblus","adset_name":"frio_interesses_v2","spend":"230.33","impressions":"22214","reach":"14206","frequency":"1.563705","cpm":"10.368686","ctr":"3.448276","inline_link_clicks":"472","inline_link_click_ctr":"2.124786","actions":[{"action_type":"web_in_store_purchase","value":"3"},{"action_type":"omni_purchase","value":"3"},{"action_type":"link_click","value":"472"},{"action_type":"omni_initiated_checkout","value":"16"},{"action_type":"page_engagement","value":"3787"},{"action_type":"purchase","value":"3"},{"action_type":"landing_page_view","value":"412"},{"action_type":"add_to_cart","value":"67"},{"action_type":"onsite_conversion.view_content","value":"19"},{"action_type":"omni_landing_page_view","value":"412"},{"action_type":"onsite_app_view_content","value":"19"},{"action_type":"post_engagement","value":"3787"},{"action_type":"post_interaction_gross","value":"62"},{"action_type":"comment","value":"3"},{"action_type":"onsite_web_app_purchase","value":"3"},{"action_type":"onsite_web_view_content","value":"600"},{"action_type":"onsite_web_add_to_cart","value":"67"},{"action_type":"post_interaction_net","value":"62"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"3"},{"action_type":"onsite_conversion.messaging_user_depth_2_message_send","value":"1"},{"action_type":"onsite_web_app_view_content","value":"600"},{"action_type":"post","value":"8"},{"action_type":"view_content","value":"581"},{"action_type":"onsite_conversion.post_save","value":"3"},{"action_type":"onsite_conversion.post_net_comment","value":"3"},{"action_type":"web_app_in_store_purchase","value":"3"},{"action_type":"onsite_web_app_add_to_cart","value":"67"},{"action_type":"onsite_conversion.post_net_save","value":"3"},{"action_type":"onsite_conversion.post_net_like","value":"48"},{"action_type":"onsite_web_initiate_checkout","value":"16"},{"action_type":"omni_add_to_cart","value":"67"},{"action_type":"offsite_content_view_add_meta_leads","value":"581"},{"action_type":"onsite_web_purchase","value":"3"},{"action_type":"video_view","value":"3253"},{"action_type":"omni_view_content","value":"600"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"581"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"67"},{"action_type":"post_reaction","value":"48"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"16"},{"action_type":"initiate_checkout","value":"16"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"526.09"},{"action_type":"onsite_web_app_add_to_cart","value":"14114.15"},{"action_type":"onsite_web_initiate_checkout","value":"2909.76"},{"action_type":"omni_initiated_checkout","value":"2909.76"},{"action_type":"web_app_in_store_purchase","value":"0.05"},{"action_type":"add_to_cart","value":"14114.15"},{"action_type":"onsite_web_purchase","value":"526.09"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"14114.15"},{"action_type":"purchase","value":"526.09"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"2909.76"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"526.09"},{"action_type":"initiate_checkout","value":"2909.76"},{"action_type":"omni_add_to_cart","value":"14114.15"},{"action_type":"omni_purchase","value":"526.09"},{"action_type":"web_in_store_purchase","value":"526.09"},{"action_type":"onsite_web_add_to_cart","value":"14114.15"}],"purchase_roas":[{"action_type":"omni_purchase","value":"2.284071"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"2945"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"1267"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"491"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":230.33,"impressions":22214,"reach":14206,"roas":2.284071,"purchases":3,"addToCart":67,"cac":76.77666666666667,"cpaCart":3.437761194029851,"hookRate":14.643918249752408,"holdRate":5.703610335824255,"ctrLink":2.124786,"frequency":1.563705,"cpm":10.368686,"clicks":472}},{"campaign_name":"vendas_rmkt","adset_name":"quente_catálogo","spend":"101.32","impressions":"4452","reach":"342","frequency":"13.017544","cpm":"22.758311","ctr":"2.448338","inline_link_clicks":"90","inline_link_click_ctr":"2.021563","actions":[{"action_type":"web_in_store_purchase","value":"1"},{"action_type":"omni_purchase","value":"1"},{"action_type":"link_click","value":"90"},{"action_type":"omni_initiated_checkout","value":"2"},{"action_type":"page_engagement","value":"92"},{"action_type":"purchase","value":"1"},{"action_type":"landing_page_view","value":"74"},{"action_type":"add_to_cart","value":"6"},{"action_type":"omni_landing_page_view","value":"74"},{"action_type":"post_engagement","value":"92"},{"action_type":"post_interaction_gross","value":"2"},{"action_type":"onsite_web_app_purchase","value":"1"},{"action_type":"onsite_web_view_content","value":"91"},{"action_type":"onsite_web_add_to_cart","value":"6"},{"action_type":"post_interaction_net","value":"2"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"1"},{"action_type":"onsite_web_app_view_content","value":"91"},{"action_type":"view_content","value":"91"},{"action_type":"web_app_in_store_purchase","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"6"},{"action_type":"onsite_conversion.post_net_like","value":"2"},{"action_type":"onsite_web_initiate_checkout","value":"2"},{"action_type":"omni_add_to_cart","value":"6"},{"action_type":"offsite_content_view_add_meta_leads","value":"91"},{"action_type":"onsite_web_purchase","value":"1"},{"action_type":"omni_view_content","value":"91"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"91"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"6"},{"action_type":"post_reaction","value":"2"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"2"},{"action_type":"initiate_checkout","value":"2"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"166.66"},{"action_type":"onsite_web_app_add_to_cart","value":"1521.5"},{"action_type":"onsite_web_initiate_checkout","value":"336.12"},{"action_type":"omni_initiated_checkout","value":"336.12"},{"action_type":"web_app_in_store_purchase","value":"0.02"},{"action_type":"add_to_cart","value":"1521.5"},{"action_type":"onsite_web_purchase","value":"166.66"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"1521.5"},{"action_type":"purchase","value":"166.66"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"336.12"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"166.66"},{"action_type":"initiate_checkout","value":"336.12"},{"action_type":"omni_add_to_cart","value":"1521.5"},{"action_type":"omni_purchase","value":"166.66"},{"action_type":"web_in_store_purchase","value":"166.66"},{"action_type":"onsite_web_add_to_cart","value":"1521.5"}],"purchase_roas":[{"action_type":"omni_purchase","value":"1.644887"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":101.32,"impressions":4452,"reach":342,"roas":1.644887,"purchases":1,"addToCart":6,"cac":101.32,"cpaCart":16.886666666666667,"hookRate":0,"holdRate":0,"ctrLink":2.021563,"frequency":13.017544,"cpm":22.758311,"clicks":90}},{"campaign_name":"tráfego_ecomm","adset_name":"frio_interesses_v3","spend":"253.51","impressions":"44095","reach":"30398","frequency":"1.450589","cpm":"5.749178","ctr":"4.043542","inline_link_clicks":"1720","inline_link_click_ctr":"3.900669","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"1720"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"page_engagement","value":"1973"},{"action_type":"landing_page_view","value":"909"},{"action_type":"add_to_cart","value":"5"},{"action_type":"onsite_conversion.view_content","value":"8"},{"action_type":"omni_landing_page_view","value":"909"},{"action_type":"onsite_app_view_content","value":"8"},{"action_type":"post_engagement","value":"1973"},{"action_type":"post_interaction_gross","value":"52"},{"action_type":"onsite_web_view_content","value":"869"},{"action_type":"onsite_web_add_to_cart","value":"5"},{"action_type":"post_interaction_net","value":"52"},{"action_type":"onsite_web_app_view_content","value":"869"},{"action_type":"view_content","value":"861"},{"action_type":"onsite_conversion.post_save","value":"5"},{"action_type":"onsite_web_app_add_to_cart","value":"5"},{"action_type":"onsite_conversion.post_net_save","value":"5"},{"action_type":"onsite_conversion.post_net_like","value":"47"},{"action_type":"omni_add_to_cart","value":"5"},{"action_type":"offsite_content_view_add_meta_leads","value":"861"},{"action_type":"video_view","value":"201"},{"action_type":"omni_view_content","value":"869"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"861"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"5"},{"action_type":"post_reaction","value":"47"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"939.75"},{"action_type":"add_to_cart","value":"939.75"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"939.75"},{"action_type":"omni_add_to_cart","value":"939.75"},{"action_type":"onsite_web_add_to_cart","value":"939.75"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"155"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"86"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"49"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":253.51,"impressions":44095,"reach":30398,"roas":0,"purchases":0,"addToCart":5,"cac":0,"cpaCart":50.702,"hookRate":0.4558339947839891,"holdRate":0.19503345050459236,"ctrLink":3.900669,"frequency":1.450589,"cpm":5.749178,"clicks":1720}},{"campaign_name":"venda_noblus","adset_name":"frio_interesses_v3_comprar","spend":"228.61","impressions":"9821","reach":"7007","frequency":"1.401598","cpm":"23.27767","ctr":"2.331738","inline_link_clicks":"120","inline_link_click_ctr":"1.221872","actions":[{"action_type":"onsite_conversion.total_messaging_connection","value":"5"},{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"web_in_store_purchase","value":"1"},{"action_type":"omni_purchase","value":"1"},{"action_type":"link_click","value":"120"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"omni_initiated_checkout","value":"3"},{"action_type":"page_engagement","value":"1538"},{"action_type":"purchase","value":"1"},{"action_type":"landing_page_view","value":"97"},{"action_type":"add_to_cart","value":"14"},{"action_type":"onsite_conversion.view_content","value":"12"},{"action_type":"omni_landing_page_view","value":"97"},{"action_type":"onsite_app_view_content","value":"12"},{"action_type":"post_engagement","value":"1538"},{"action_type":"post_interaction_gross","value":"20"},{"action_type":"comment","value":"1"},{"action_type":"onsite_web_app_purchase","value":"1"},{"action_type":"onsite_web_view_content","value":"161"},{"action_type":"onsite_web_add_to_cart","value":"14"},{"action_type":"post_interaction_net","value":"20"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"1"},{"action_type":"onsite_conversion.messaging_user_depth_2_message_send","value":"1"},{"action_type":"onsite_conversion.messaging_first_reply","value":"1"},{"action_type":"onsite_web_app_view_content","value":"161"},{"action_type":"post","value":"2"},{"action_type":"view_content","value":"149"},{"action_type":"onsite_conversion.post_save","value":"1"},{"action_type":"onsite_conversion.post_net_comment","value":"1"},{"action_type":"onsite_conversion.messaging_user_depth_3_message_send","value":"2"},{"action_type":"web_app_in_store_purchase","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"14"},{"action_type":"onsite_conversion.post_net_save","value":"1"},{"action_type":"onsite_conversion.post_net_like","value":"16"},{"action_type":"onsite_web_initiate_checkout","value":"3"},{"action_type":"omni_add_to_cart","value":"14"},{"action_type":"offsite_content_view_add_meta_leads","value":"149"},{"action_type":"onsite_web_purchase","value":"1"},{"action_type":"onsite_conversion.messaging_conversation_started_7d","value":"2"},{"action_type":"video_view","value":"1398"},{"action_type":"omni_view_content","value":"161"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"149"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"14"},{"action_type":"post_reaction","value":"16"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"3"},{"action_type":"initiate_checkout","value":"3"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"160.28"},{"action_type":"onsite_web_app_add_to_cart","value":"2890.85"},{"action_type":"onsite_web_initiate_checkout","value":"456.45"},{"action_type":"omni_initiated_checkout","value":"456.45"},{"action_type":"web_app_in_store_purchase","value":"0.02"},{"action_type":"add_to_cart","value":"2890.85"},{"action_type":"onsite_web_purchase","value":"160.28"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"2890.85"},{"action_type":"purchase","value":"160.28"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"456.45"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"160.28"},{"action_type":"initiate_checkout","value":"456.45"},{"action_type":"omni_add_to_cart","value":"2890.85"},{"action_type":"omni_purchase","value":"160.28"},{"action_type":"web_in_store_purchase","value":"160.28"},{"action_type":"onsite_web_add_to_cart","value":"2890.85"}],"purchase_roas":[{"action_type":"omni_purchase","value":"0.701107"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"1128"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"451"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"149"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":228.61,"impressions":9821,"reach":7007,"roas":0.701107,"purchases":1,"addToCart":14,"cac":228.61,"cpaCart":16.329285714285714,"hookRate":14.234802973220651,"holdRate":4.592200386925975,"ctrLink":1.221872,"frequency":1.401598,"cpm":23.27767,"clicks":120}},{"campaign_name":"vendas_rmkt_v2","adset_name":"quente_catálogo","spend":"102","impressions":"3890","reach":"2458","frequency":"1.582587","cpm":"26.22108","ctr":"2.493573","inline_link_clicks":"76","inline_link_click_ctr":"1.953728","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"76"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"page_engagement","value":"83"},{"action_type":"landing_page_view","value":"40"},{"action_type":"add_to_cart","value":"4"},{"action_type":"onsite_conversion.view_content","value":"3"},{"action_type":"omni_landing_page_view","value":"40"},{"action_type":"onsite_app_view_content","value":"3"},{"action_type":"post_engagement","value":"83"},{"action_type":"post_interaction_gross","value":"7"},{"action_type":"onsite_web_view_content","value":"60"},{"action_type":"onsite_web_add_to_cart","value":"4"},{"action_type":"post_interaction_net","value":"7"},{"action_type":"onsite_web_app_view_content","value":"60"},{"action_type":"view_content","value":"57"},{"action_type":"onsite_conversion.post_save","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"4"},{"action_type":"onsite_conversion.post_net_save","value":"1"},{"action_type":"onsite_conversion.post_net_like","value":"6"},{"action_type":"omni_add_to_cart","value":"4"},{"action_type":"offsite_content_view_add_meta_leads","value":"57"},{"action_type":"omni_view_content","value":"60"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"57"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"4"},{"action_type":"post_reaction","value":"6"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"742.85"},{"action_type":"add_to_cart","value":"742.85"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"742.85"},{"action_type":"omni_add_to_cart","value":"742.85"},{"action_type":"onsite_web_add_to_cart","value":"742.85"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":102,"impressions":3890,"reach":2458,"roas":0,"purchases":0,"addToCart":4,"cac":0,"cpaCart":25.5,"hookRate":0,"holdRate":0,"ctrLink":1.953728,"frequency":1.582587,"cpm":26.22108,"clicks":76}},{"campaign_name":"vendas_v2","adset_name":"frio_interesses_adv+_Homem","spend":"65.87","impressions":"3607","reach":"2518","frequency":"1.432486","cpm":"18.261713","ctr":"2.107014","inline_link_clicks":"52","inline_link_click_ctr":"1.441641","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"52"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"page_engagement","value":"75"},{"action_type":"landing_page_view","value":"27"},{"action_type":"omni_landing_page_view","value":"27"},{"action_type":"post_engagement","value":"75"},{"action_type":"post_interaction_gross","value":"12"},{"action_type":"onsite_web_view_content","value":"27"},{"action_type":"post_interaction_net","value":"12"},{"action_type":"onsite_web_app_view_content","value":"27"},{"action_type":"view_content","value":"27"},{"action_type":"onsite_conversion.post_save","value":"2"},{"action_type":"onsite_conversion.post_net_save","value":"2"},{"action_type":"onsite_conversion.post_net_like","value":"10"},{"action_type":"offsite_content_view_add_meta_leads","value":"27"},{"action_type":"video_view","value":"11"},{"action_type":"omni_view_content","value":"27"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"27"},{"action_type":"post_reaction","value":"10"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"4"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"4"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"2"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":65.87,"impressions":3607,"reach":2518,"roas":0,"purchases":0,"addToCart":0,"cac":0,"cpaCart":0,"hookRate":0.3049625727751594,"holdRate":0.11089548100914888,"ctrLink":1.441641,"frequency":1.432486,"cpm":18.261713,"clicks":52}},{"campaign_name":"vendas_v2","adset_name":"frio_interesses_adv+_Mulher","spend":"109.26","impressions":"4933","reach":"2927","frequency":"1.685343","cpm":"22.148794","ctr":"2.696128","inline_link_clicks":"93","inline_link_click_ctr":"1.885263","actions":[{"action_type":"web_in_store_purchase","value":"1"},{"action_type":"omni_purchase","value":"1"},{"action_type":"link_click","value":"93"},{"action_type":"omni_initiated_checkout","value":"2"},{"action_type":"page_engagement","value":"208"},{"action_type":"purchase","value":"1"},{"action_type":"landing_page_view","value":"59"},{"action_type":"add_to_cart","value":"10"},{"action_type":"onsite_conversion.view_content","value":"3"},{"action_type":"omni_landing_page_view","value":"59"},{"action_type":"onsite_app_view_content","value":"3"},{"action_type":"post_engagement","value":"208"},{"action_type":"post_interaction_gross","value":"7"},{"action_type":"onsite_web_app_purchase","value":"1"},{"action_type":"onsite_web_view_content","value":"83"},{"action_type":"onsite_web_add_to_cart","value":"10"},{"action_type":"post_interaction_net","value":"7"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"1"},{"action_type":"onsite_web_app_view_content","value":"83"},{"action_type":"view_content","value":"80"},{"action_type":"web_app_in_store_purchase","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"10"},{"action_type":"onsite_conversion.post_net_like","value":"7"},{"action_type":"onsite_web_initiate_checkout","value":"2"},{"action_type":"omni_add_to_cart","value":"10"},{"action_type":"offsite_content_view_add_meta_leads","value":"80"},{"action_type":"onsite_web_purchase","value":"1"},{"action_type":"video_view","value":"108"},{"action_type":"omni_view_content","value":"83"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"80"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"10"},{"action_type":"post_reaction","value":"7"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"2"},{"action_type":"initiate_checkout","value":"2"}],"action_values":[{"action_type":"onsite_web_app_purchase","value":"185.61"},{"action_type":"onsite_web_app_add_to_cart","value":"2944.55"},{"action_type":"onsite_web_initiate_checkout","value":"346.71"},{"action_type":"omni_initiated_checkout","value":"346.71"},{"action_type":"web_app_in_store_purchase","value":"0.02"},{"action_type":"add_to_cart","value":"2944.55"},{"action_type":"onsite_web_purchase","value":"185.61"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"2944.55"},{"action_type":"purchase","value":"185.61"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"346.71"},{"action_type":"offsite_conversion.fb_pixel_purchase","value":"185.61"},{"action_type":"initiate_checkout","value":"346.71"},{"action_type":"omni_add_to_cart","value":"2944.55"},{"action_type":"omni_purchase","value":"185.61"},{"action_type":"web_in_store_purchase","value":"185.61"},{"action_type":"onsite_web_add_to_cart","value":"2944.55"}],"purchase_roas":[{"action_type":"omni_purchase","value":"1.698792"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"145"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"60"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"31"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":109.26,"impressions":4933,"reach":2927,"roas":1.698792,"purchases":1,"addToCart":10,"cac":109.26,"cpaCart":10.926,"hookRate":2.1893371173727956,"holdRate":1.216298398540442,"ctrLink":1.885263,"frequency":1.685343,"cpm":22.148794,"clicks":93}},{"campaign_name":"vendas_v2","adset_name":"BF_frio_LAL_addcart","spend":"165.95","impressions":"6297","reach":"3343","frequency":"1.883637","cpm":"26.353819","ctr":"4.319517","inline_link_clicks":"218","inline_link_click_ctr":"3.461966","actions":[{"action_type":"onsite_conversion.total_messaging_connection","value":"4"},{"action_type":"link_click","value":"218"},{"action_type":"omni_initiated_checkout","value":"6"},{"action_type":"page_engagement","value":"326"},{"action_type":"landing_page_view","value":"101"},{"action_type":"add_to_cart","value":"37"},{"action_type":"onsite_conversion.view_content","value":"9"},{"action_type":"omni_landing_page_view","value":"101"},{"action_type":"onsite_app_view_content","value":"9"},{"action_type":"post_engagement","value":"326"},{"action_type":"post_interaction_gross","value":"17"},{"action_type":"onsite_web_view_content","value":"116"},{"action_type":"onsite_web_add_to_cart","value":"37"},{"action_type":"post_interaction_net","value":"17"},{"action_type":"onsite_conversion.messaging_user_depth_2_message_send","value":"2"},{"action_type":"onsite_web_app_view_content","value":"116"},{"action_type":"post","value":"1"},{"action_type":"view_content","value":"107"},{"action_type":"onsite_conversion.post_save","value":"1"},{"action_type":"onsite_conversion.messaging_user_depth_3_message_send","value":"1"},{"action_type":"onsite_web_app_add_to_cart","value":"37"},{"action_type":"onsite_conversion.post_net_save","value":"1"},{"action_type":"onsite_conversion.post_net_like","value":"15"},{"action_type":"onsite_web_initiate_checkout","value":"6"},{"action_type":"omni_add_to_cart","value":"37"},{"action_type":"offsite_content_view_add_meta_leads","value":"107"},{"action_type":"onsite_conversion.messaging_conversation_started_7d","value":"4"},{"action_type":"video_view","value":"91"},{"action_type":"omni_view_content","value":"116"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"107"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"37"},{"action_type":"post_reaction","value":"15"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"6"},{"action_type":"initiate_checkout","value":"6"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"8484.6"},{"action_type":"onsite_web_initiate_checkout","value":"984.5"},{"action_type":"omni_initiated_checkout","value":"984.5"},{"action_type":"add_to_cart","value":"8484.6"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"8484.6"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"984.5"},{"action_type":"initiate_checkout","value":"984.5"},{"action_type":"omni_add_to_cart","value":"8484.6"},{"action_type":"onsite_web_add_to_cart","value":"8484.6"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"64"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"25"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"6"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":165.95,"impressions":6297,"reach":3343,"roas":0,"purchases":0,"addToCart":37,"cac":0,"cpaCart":4.485135135135135,"hookRate":1.4451326028267428,"holdRate":0.39701445132602825,"ctrLink":3.461966,"frequency":1.883637,"cpm":26.353819,"clicks":218}},{"campaign_name":"vendas_noblus_out25","adset_name":"GA01_ATC_Adv+_LAL+Interesses (Exclusão Norte)","spend":"65.92","impressions":"1937","reach":"1339","frequency":"1.446602","cpm":"34.032008","ctr":"6.350026","inline_link_clicks":"108","inline_link_click_ctr":"5.575632","actions":[{"action_type":"link_click","value":"108"},{"action_type":"page_engagement","value":"293"},{"action_type":"landing_page_view","value":"38"},{"action_type":"add_to_cart","value":"8"},{"action_type":"onsite_conversion.view_content","value":"1"},{"action_type":"omni_landing_page_view","value":"38"},{"action_type":"onsite_app_view_content","value":"1"},{"action_type":"post_engagement","value":"293"},{"action_type":"post_interaction_gross","value":"8"},{"action_type":"onsite_web_view_content","value":"32"},{"action_type":"onsite_web_add_to_cart","value":"8"},{"action_type":"post_interaction_net","value":"8"},{"action_type":"onsite_web_app_view_content","value":"32"},{"action_type":"view_content","value":"31"},{"action_type":"onsite_web_app_add_to_cart","value":"8"},{"action_type":"onsite_conversion.post_net_like","value":"8"},{"action_type":"omni_add_to_cart","value":"8"},{"action_type":"offsite_content_view_add_meta_leads","value":"31"},{"action_type":"video_view","value":"177"},{"action_type":"omni_view_content","value":"32"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"31"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"8"},{"action_type":"post_reaction","value":"8"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"2210.65"},{"action_type":"add_to_cart","value":"2210.65"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"2210.65"},{"action_type":"omni_add_to_cart","value":"2210.65"},{"action_type":"onsite_web_add_to_cart","value":"2210.65"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"123"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"80"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"65"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":65.92,"impressions":1937,"reach":1339,"roas":0,"purchases":0,"addToCart":8,"cac":0,"cpaCart":8.24,"hookRate":9.137842023748064,"holdRate":4.130098089829634,"ctrLink":5.575632,"frequency":1.446602,"cpm":34.032008,"clicks":108}},{"campaign_name":"rmkt_quente","adset_name":"purchase_vc14+act14+engaj30","spend":"65.29","impressions":"3400","reach":"2293","frequency":"1.482774","cpm":"19.202941","ctr":"2.647059","inline_link_clicks":"66","inline_link_click_ctr":"1.941176","actions":[{"action_type":"onsite_conversion.add_to_wishlist","value":"1"},{"action_type":"link_click","value":"66"},{"action_type":"omni_add_to_wishlist","value":"1"},{"action_type":"omni_initiated_checkout","value":"4"},{"action_type":"page_engagement","value":"140"},{"action_type":"landing_page_view","value":"39"},{"action_type":"add_to_cart","value":"12"},{"action_type":"onsite_conversion.view_content","value":"1"},{"action_type":"omni_landing_page_view","value":"39"},{"action_type":"onsite_app_view_content","value":"1"},{"action_type":"post_engagement","value":"140"},{"action_type":"post_interaction_gross","value":"4"},{"action_type":"onsite_web_view_content","value":"44"},{"action_type":"onsite_web_add_to_cart","value":"12"},{"action_type":"post_interaction_net","value":"4"},{"action_type":"onsite_web_app_view_content","value":"44"},{"action_type":"view_content","value":"43"},{"action_type":"onsite_web_app_add_to_cart","value":"12"},{"action_type":"onsite_conversion.post_net_like","value":"4"},{"action_type":"onsite_web_initiate_checkout","value":"4"},{"action_type":"omni_add_to_cart","value":"12"},{"action_type":"offsite_content_view_add_meta_leads","value":"43"},{"action_type":"video_view","value":"70"},{"action_type":"omni_view_content","value":"44"},{"action_type":"offsite_conversion.fb_pixel_view_content","value":"43"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"12"},{"action_type":"post_reaction","value":"4"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"4"},{"action_type":"initiate_checkout","value":"4"}],"action_values":[{"action_type":"onsite_web_app_add_to_cart","value":"2559.7"},{"action_type":"onsite_web_initiate_checkout","value":"635.45"},{"action_type":"omni_initiated_checkout","value":"635.45"},{"action_type":"add_to_cart","value":"2559.7"},{"action_type":"offsite_conversion.fb_pixel_add_to_cart","value":"2559.7"},{"action_type":"offsite_conversion.fb_pixel_initiate_checkout","value":"635.45"},{"action_type":"initiate_checkout","value":"635.45"},{"action_type":"omni_add_to_cart","value":"2559.7"},{"action_type":"onsite_web_add_to_cart","value":"2559.7"}],"video_p25_watched_actions":[{"action_type":"video_view","value":"51"}],"video_p50_watched_actions":[{"action_type":"video_view","value":"11"}],"video_thruplay_watched_actions":[{"action_type":"video_view","value":"4"}],"date_start":"2025-10-10","date_stop":"2026-04-08","_metrics":{"spend":65.29,"impressions":3400,"reach":2293,"roas":0,"purchases":0,"addToCart":12,"cac":0,"cpaCart":5.440833333333334,"hookRate":2.0588235294117645,"holdRate":0.3235294117647059,"ctrLink":1.941176,"frequency":1.482774,"cpm":19.202941,"clicks":66}}]}}};
+
+// ─── BENCHMARKS ────────────────────────────────────────────────────────────
+function statusRoas(v)  { return v >= 4 ? 'ok' : v >= 2.5 ? 'warn' : 'crit'; }
+function statusHook(v)  { return v >= 30 ? 'ok' : v >= 20 ? 'warn' : 'crit'; }
+function statusHold(v)  { return v >= 20 ? 'ok' : v >= 10 ? 'warn' : 'crit'; }
+function statusCtr(v)   { return v >= 1.5 ? 'ok' : v >= 1 ? 'warn' : 'crit'; }
+function statusFreq(v)  { return v <= 3 ? 'ok' : v <= 4.5 ? 'warn' : 'crit'; }
+function statusLabel(s) { return { ok: '✓ Ótimo', warn: '⚠ Atenção', crit: '✕ Crítico' }[s]; }
+
+// ─── FORMAT ────────────────────────────────────────────────────────────────
+function brl(v) {
+  return 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function pct(v) { return Number(v).toFixed(2).replace('.', ',') + '%'; }
+function num(v) { return Number(v).toLocaleString('pt-BR'); }
+
+// ─── CHART INSTANCES ───────────────────────────────────────────────────────
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function resetZoom(id) { if (charts[id]) charts[id].resetZoom(); }
+
+// ─── AGGREGATE ─────────────────────────────────────────────────────────────
+function aggregate(rows) {
+  if (!rows.length) return null;
+  let spend = 0, impressions = 0, reach = 0, purchases = 0, addToCart = 0, clicks = 0;
+  let roasNum = 0, roasDen = 0;
+  for (const r of rows) {
+    const m = r._metrics;
+    spend += m.spend;
+    impressions += m.impressions;
+    reach += m.reach;
+    purchases += m.purchases;
+    addToCart += m.addToCart;
+    clicks += m.clicks;
+    if (m.roas > 0) { roasNum += m.roas * m.spend; roasDen += m.spend; }
+  }
+  const roas = roasDen > 0 ? roasNum / roasDen : 0;
+  const views3s = rows.reduce((s, r) => s + (findAction(r.actions, 'video_view') || 0), 0);
+  const views50 = rows.reduce((s, r) => s + (findAction(r.video_p50_watched_actions, 'video_view') || 0), 0);
+  const viewsTp = rows.reduce((s, r) => s + (findAction(r.video_thruplay_watched_actions, 'video_view') || 0), 0);
+  const hookRate = impressions > 0 ? (views3s / impressions) * 100 : 0;
+  const holdRate = impressions > 0 ? ((views50 || viewsTp) / impressions) * 100 : 0;
+  const ctrLink = clicks > 0 && impressions > 0 ? (clicks / impressions) * 100 : 0;
+  const cac = purchases > 0 ? spend / purchases : 0;
+  const cpaCart = addToCart > 0 ? spend / addToCart : 0;
+  const frequency = rows.reduce((s, r) => s + r._metrics.frequency * r._metrics.impressions, 0) / (impressions || 1);
+  const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+  return { spend, impressions, reach, purchases, addToCart, clicks, roas, hookRate, holdRate, ctrLink, cac, cpaCart, frequency, cpm };
+}
+
+function findAction(arr, type) {
+  if (!Array.isArray(arr)) return 0;
+  const a = arr.find(x => x.action_type === type);
+  return a ? parseFloat(a.value) : 0;
+}
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let state = { period: 180, campaign: 'all', adset: 'all' };
+
+function getPeriodData() {
+  return DASHBOARD_DATA.periods[state.period] || { campaign: [], adset: [] };
+}
+
+function getActiveCampaigns() {
+  return getPeriodData().campaign || [];
+}
+
+function getActiveAdsets() {
+  const adsets = getPeriodData().adset || [];
+  if (state.campaign === 'all') return adsets;
+  return adsets.filter(a => a.campaign_name === state.campaign);
+}
+
+function getTableRows() {
+  if (state.adset !== 'all') {
+    return getActiveAdsets().filter(a => a.adset_name === state.adset);
+  }
+  if (state.campaign !== 'all') {
+    return getActiveAdsets();
+  }
+  return getActiveCampaigns();
+}
+
+function getAggregateMetrics() {
+  return aggregate(getTableRows());
+}
+
+function getRowLabel(row) {
+  if (state.campaign !== 'all') return row.adset_name || row.campaign_name || '—';
+  return row.campaign_name || row.adset_name || '—';
+}
+
+// ─── KPI CARDS ─────────────────────────────────────────────────────────────
+function renderKpis() {
+  const m = getAggregateMetrics();
+  if (!m) {
+    document.getElementById('kpi-grid').innerHTML = '<div class="empty"><h3>Sem dados</h3><p>Nenhum dado disponível para este filtro.</p></div>';
+    return;
+  }
+  const cards = [
+    { label: 'ROAS', value: m.roas > 0 ? m.roas.toFixed(2) + 'x' : '—', status: statusRoas(m.roas), badge: statusLabel(statusRoas(m.roas)), meta: 'Meta: ≥ 4x' },
+    { label: 'Investimento', value: brl(m.spend), status: 'ok', badge: null, meta: num(m.impressions) + ' impressões' },
+    { label: 'Compras', value: num(m.purchases), status: m.purchases > 0 ? 'ok' : 'crit', badge: m.cac > 0 ? 'CAC ' + brl(m.cac) : null, meta: m.addToCart + ' carrinhos' },
+    { label: 'CTR Link', value: pct(m.ctrLink), status: statusCtr(m.ctrLink), badge: statusLabel(statusCtr(m.ctrLink)), meta: 'Meta: ≥ 1,5%' },
+    { label: 'Hook Rate', value: pct(m.hookRate), status: statusHook(m.hookRate), badge: statusLabel(statusHook(m.hookRate)), meta: 'Meta: ≥ 30%' },
+    { label: 'Hold Rate', value: pct(m.holdRate), status: statusHold(m.holdRate), badge: statusLabel(statusHold(m.holdRate)), meta: 'Meta: ≥ 20%' },
+  ];
+  document.getElementById('kpi-grid').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.status}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      ${c.badge ? `<span class="kpi-badge ${c.status}">${c.badge}</span>` : ''}
+      <div class="kpi-meta">${c.meta}</div>
+    </div>
+  `).join('');
+}
+
+// ─── CHARTS ────────────────────────────────────────────────────────────────
+const COLORS = ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe','#818cf8'];
+const C_OK   = '#22c55e';
+const C_WARN = '#f59e0b';
+const C_CRIT = '#ef4444';
+
+function metricColor(fn, v) {
+  const s = fn(v);
+  return s === 'ok' ? C_OK : s === 'warn' ? C_WARN : C_CRIT;
+}
+
+const zoomPlugin = {
+  zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+  pan: { enabled: true, mode: 'x' },
+};
+
+function renderCharts() {
+  const rows = getTableRows();
+  if (!rows.length) return;
+
+  const labels = rows.map(r => getRowLabel(r));
+  const metrics = rows.map(r => r._metrics);
+
+  // ROAS Chart (horizontal bar)
+  destroyChart('chartRoas');
+  const ctxRoas = document.getElementById('chartRoas').getContext('2d');
+  charts['chartRoas'] = new Chart(ctxRoas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'ROAS',
+        data: metrics.map(m => m.roas),
+        backgroundColor: metrics.map(m => metricColor(statusRoas, m.roas)),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `ROAS: ${ctx.raw.toFixed(2)}x (meta: 4x)`
+          }
+        },
+        zoom: zoomPlugin,
+        annotation: {
+          annotations: {
+            goal: {
+              type: 'line',
+              xMin: 4, xMax: 4,
+              borderColor: '#6366f1',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              label: { display: true, content: 'Meta 4x', position: 'start', font: { size: 10 } }
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // Funnel
+  const agg = aggregate(rows);
+  if (agg) {
+    const steps = [
+      { label: 'Impressões', value: agg.impressions, color: '#6366f1' },
+      { label: 'Cliques', value: agg.clicks, color: '#8b5cf6' },
+      { label: 'Carrinhos', value: agg.addToCart, color: '#f59e0b' },
+      { label: 'Compras', value: agg.purchases, color: '#22c55e' },
+    ];
+    const max = steps[0].value || 1;
+    document.getElementById('funnel-wrap').innerHTML = steps.map((s, i) => {
+      const w = Math.max((s.value / max) * 100, s.value > 0 ? 5 : 0);
+      const pctVsPrev = i === 0 ? '' : steps[i-1].value > 0 ? pct((s.value / steps[i-1].value) * 100) : '—';
+      return `
+        <div class="funnel-row">
+          <div class="funnel-label">${s.label}</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:${w}%;background:${s.color}">
+              ${num(s.value)}
+            </div>
+          </div>
+          <div class="funnel-pct">${pctVsPrev}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Spend Doughnut
+  destroyChart('chartSpend');
+  const ctxSpend = document.getElementById('chartSpend').getContext('2d');
+  charts['chartSpend'] = new Chart(ctxSpend, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: metrics.map(m => m.spend),
+        backgroundColor: COLORS.slice(0, labels.length),
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${brl(ctx.raw)} (${((ctx.raw/metrics.reduce((s,m)=>s+m.spend,0))*100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+
+  // Hook vs Hold grouped bar
+  destroyChart('chartHook');
+  const ctxHook = document.getElementById('chartHook').getContext('2d');
+  charts['chartHook'] = new Chart(ctxHook, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Hook Rate (3s)',
+          data: metrics.map(m => m.hookRate),
+          backgroundColor: metrics.map(m => metricColor(statusHook, m.hookRate) + 'cc'),
+          borderRadius: 4,
+        },
+        {
+          label: 'Hold Rate (50%)',
+          data: metrics.map(m => m.holdRate),
+          backgroundColor: metrics.map(m => metricColor(statusHold, m.holdRate) + '88'),
+          borderRadius: 4,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)}%`
+          }
+        },
+        zoom: zoomPlugin,
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 11 }, callback: v => v + '%' },
+          max: Math.max(35, ...metrics.map(m => Math.max(m.hookRate, m.holdRate))) + 5,
+        }
+      }
+    }
+  });
+}
+
+// ─── TABLE ─────────────────────────────────────────────────────────────────
+let sortCol = -1, sortAsc = true;
+
+function renderTable() {
+  const rows = getTableRows();
+  const isAdsetView = state.campaign !== 'all';
+  document.getElementById('table-title').textContent = isAdsetView
+    ? 'Conjuntos de Anúncios — ' + state.campaign
+    : 'Campanhas';
+
+  if (!rows.length) {
+    document.getElementById('table-body').innerHTML = '<tr><td colspan="10" class="empty">Sem dados para este filtro.</td></tr>';
+    return;
+  }
+
+  document.getElementById('table-body').innerHTML = rows.map(r => {
+    const m = r._metrics;
+    const name = getRowLabel(r);
+    return `<tr>
+      <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${name}">${name}</td>
+      <td>${brl(m.spend)}</td>
+      <td><span class="badge ${statusRoas(m.roas)}">${m.roas > 0 ? m.roas.toFixed(2) + 'x' : '—'}</span></td>
+      <td>${m.purchases || '—'}</td>
+      <td>${m.addToCart || '—'}</td>
+      <td><span class="badge ${statusCtr(m.ctrLink)}">${pct(m.ctrLink)}</span></td>
+      <td><span class="badge ${statusHook(m.hookRate)}">${pct(m.hookRate)}</span></td>
+      <td><span class="badge ${statusHold(m.holdRate)}">${pct(m.holdRate)}</span></td>
+      <td>${brl(m.cpm)}</td>
+      <td><span class="badge ${statusFreq(m.frequency)}">${m.frequency.toFixed(2)}x</span></td>
+    </tr>`;
+  }).join('');
+
+  // Update sort icon
+  document.querySelectorAll('th').forEach((th, i) => {
+    th.classList.toggle('sorted', i === sortCol);
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = i === sortCol ? (sortAsc ? '↑' : '↓') : '↕';
+  });
+}
+
+function sortTable(col) {
+  if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = false; }
+  // Note: sorting would need to re-sort the getTableRows() result
+  // For simplicity we sort the DOM rows
+  const tbody = document.getElementById('table-body');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a, b) => {
+    const valA = a.cells[col]?.textContent?.trim() || '';
+    const valB = b.cells[col]?.textContent?.trim() || '';
+    const numA = parseFloat(valA.replace(/[^0-9.,]/g, '').replace(',', '.'));
+    const numB = parseFloat(valB.replace(/[^0-9.,]/g, '').replace(',', '.'));
+    const cmp = isNaN(numA) || isNaN(numB) ? valA.localeCompare(valB, 'pt-BR') : numA - numB;
+    return sortAsc ? cmp : -cmp;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  document.querySelectorAll('th').forEach((th, i) => {
+    th.classList.toggle('sorted', i === sortCol);
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = i === sortCol ? (sortAsc ? '↑' : '↓') : '↕';
+  });
+}
+
+// ─── FILTER POPULATION ─────────────────────────────────────────────────────
+function populateCampaigns() {
+  const campaigns = getActiveCampaigns();
+  const sel = document.getElementById('sel-campaign');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="all">Todas</option>' +
+    campaigns.map(c => {
+      const name = c.campaign_name || '—';
+      return `<option value="${name}">${name.length > 30 ? name.slice(0,28)+'…' : name}</option>`;
+    }).join('');
+  if (campaigns.find(c => c.campaign_name === prev)) sel.value = prev;
+  else sel.value = 'all';
+}
+
+function populateAdsets() {
+  const adsets = getActiveAdsets();
+  const sel = document.getElementById('sel-adset');
+  const prev = sel.value;
+  const unique = [...new Set(adsets.map(a => a.adset_name).filter(Boolean))];
+  sel.innerHTML = '<option value="all">Todos</option>' +
+    unique.map(n => `<option value="${n}">${n.length > 28 ? n.slice(0,26)+'…' : n}</option>`).join('');
+  if (unique.includes(prev)) sel.value = prev;
+  else sel.value = 'all';
+}
+
+// ─── FULL RENDER ───────────────────────────────────────────────────────────
+function render() {
+  const subtitle = state.campaign !== 'all'
+    ? (state.adset !== 'all' ? state.adset : state.campaign)
+    : 'Visão geral da conta';
+  document.getElementById('topbar-subtitle').textContent = subtitle;
+
+  renderKpis();
+  renderCharts();
+  renderTable();
+}
+
+// ─── EVENTS ────────────────────────────────────────────────────────────────
+document.getElementById('sel-period').addEventListener('change', e => {
+  state.period = parseInt(e.target.value);
+  state.campaign = 'all';
+  state.adset = 'all';
+  populateCampaigns();
+  populateAdsets();
+  render();
+});
+
+document.getElementById('sel-campaign').addEventListener('change', e => {
+  state.campaign = e.target.value;
+  state.adset = 'all';
+  populateAdsets();
+  render();
+});
+
+document.getElementById('sel-adset').addEventListener('change', e => {
+  state.adset = e.target.value;
+  render();
+});
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('footer-date').textContent =
+  new Date(DASHBOARD_DATA.meta.collected_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+state.period = 180;
+document.getElementById('sel-period').value = '180';
+
+populateCampaigns();
+populateAdsets();
+render();
+</script>
+</body>
+</html>
