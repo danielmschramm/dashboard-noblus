@@ -1,0 +1,60 @@
+name: Atualizar Meta Ads Dashboard
+
+on:
+  schedule:
+    # Roda às 06h00 horário de Brasília (09:00 UTC)
+    - cron: '0 9 * * *'
+  # Permite rodar manualmente pelo GitHub
+  workflow_dispatch:
+
+# Permissões para GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Evita deploys simultâneos
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Buscar dados da Meta Ads API (todos os períodos)
+        run: node skills/meta-ads/scripts/fetch-multi.js --output /tmp/dashboard-data.json
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_AD_ACCOUNT_ID: ${{ secrets.META_AD_ACCOUNT_ID }}
+
+      - name: Gerar dashboard HTML
+        run: |
+          mkdir -p /tmp/www
+          node skills/meta-ads/scripts/generate-dashboard.js \
+            --input /tmp/dashboard-data.json \
+            --output /tmp/www/index.html
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload para GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/www
+
+      - name: Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
